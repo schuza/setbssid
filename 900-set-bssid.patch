@@ -1,0 +1,101 @@
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -2022,7 +2022,7 @@ struct cfg80211_ops {
+        int     (*del_virtual_intf)(struct wiphy *wiphy,
+                                    struct wireless_dev *wdev);
+        int     (*change_virtual_intf)(struct wiphy *wiphy,
+-                                      struct net_device *dev,
++                                      struct wirless_dev *dev,
+                                       enum nl80211_iftype type, u32 *flags,
+                                       struct vif_params *params);
+ 
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -1,4 +1,4 @@
+-/*
++*
+  * mac80211 configuration hooks for cfg80211
+  *
+  * Copyright 2006-2010 Johannes Berg <johannes@sipsolutions.net>
+@@ -51,16 +51,20 @@ static int ieee80211_del_iface(struct wi
+ }
+ 
+ static int ieee80211_change_iface(struct wiphy *wiphy,
+-                                 struct net_device *dev,
++                                 struct wireless_dev *dev,
+                                  enum nl80211_iftype type, u32 *flags,
+                                  struct vif_params *params)
+ {
+        struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+        int ret;
+ 
++       u32 changed = BSS_CHANGED_BSSID;
++
+        ret = ieee80211_if_change_type(sdata, type);
+        if (ret)
+                return ret;
++       struct ieee80211_bss_conf *bss_conf;
++       sdata->u.mgd.bssid = bss_conf.bssid;
+ 
+        if (type == NL80211_IFTYPE_AP_VLAN &&
+            params && params->use_4addr == 0)
+@@ -80,7 +84,7 @@ static int ieee80211_change_iface(struct
+                         * to update everything:
+                         *      cooked_mntrs, monitor and all fif_* counters
+                         *      reconfigure hardware
+-                        */
++                        */
+                        if ((*flags & MONITOR_FLAG_COOK_FRAMES) !=
+                            (sdata->u.mntr_flags & MONITOR_FLAG_COOK_FRAMES))
+                                return -EBUSY;
+@@ -100,6 +104,8 @@ static int ieee80211_change_iface(struct
+                }
+        }
+ 
++       ieee80211_bss_info_change_notify(sdata,BSS_CHANGED_BSSID);
++
+        return 0;
+ }
+ 
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1379,6 +1379,7 @@ static int nl80211_send_wiphy(struct cfg
+ 
+                CMD(add_virtual_intf, NEW_INTERFACE);
+                CMD(change_virtual_intf, SET_INTERFACE);
++               CMD(change_virtual_intf, SET_BSSID);
+                CMD(add_key, NEW_KEY);
+                CMD(start_ap, START_AP);
+                CMD(add_station, NEW_STATION);
+@@ -2337,6 +2338,16 @@ static int nl80211_valid_4addr(struct cf
+        return -EOPNOTSUPP;
+ }
+ 
++static int nl80211_set_bssid(struct sk_buff *skb, struct genl_info *info)
++{
++       struct ieee80211_bss_conf *bss_conf;
++       if(info->attrs[NL80211_ATTR_BSS]) {
++       bss_conf.bssid = nla_data(info->attrs[NL80211_ATTR_MAC]);
++       
++       else
++            return -EINVAL;
++}
++
+ static int nl80211_set_interface(struct sk_buff *skb, struct genl_info *info)
+ {
+        struct cfg80211_registered_device *rdev = info->user_ptr[0];
+@@ -8430,6 +8441,14 @@ static struct genl_ops nl80211_ops[] = {
+                                  NL80211_FLAG_NEED_RTNL,
+        },
+        {
++                .cmd = NL80211_CMD_SET_BSSID,
++                .doit = nl80211_set_bssid,
++                .policy = nl80211_policy,
++                .flags = GENL_ADMIN_PERM,
++                .internal_flags = NL80211_FLAG_NEED_NETDEV |
++                                  NL80211_FLAG_NEED_RTNL,
++        },
++       {
+                .cmd = NL80211_CMD_NEW_INTERFACE,
+                .doit = nl80211_new_interface,
+                .policy = nl80211_policy,
