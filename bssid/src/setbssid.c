@@ -12,6 +12,12 @@
 #include <stdint.h>
 #include <linux/nl80211.h>
 
+#include <errno.h>
+#include <string.h>
+#include <stdbool.h>
+#include <netlink/genl/family.h>
+#include <netlink/msg.h>
+
 
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -135,6 +141,6 @@ int main(int argc, char** argv)
 	//printf(0, "nl80211: Failed to execute CMD %d on " "%s: error =%d:%s", cmd, ifname, ret, strerror(-ret));
 		
 	}
-
+return 0;
 }
 
