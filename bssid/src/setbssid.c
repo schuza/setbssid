@@ -54,6 +54,7 @@ static int nlCallback(struct nl_msg* msg, void* arg)
 			printf("New station: "MACSTR"\n", MAC2STR(addr));
 		break;
 }
+}
 static int cmd_size;
 
 extern struct cmd __start___cmd;
@@ -96,8 +97,7 @@ int main(int argc, char** argv)
 
     //allocate a message
     msg = nlmsg_alloc();
-    if (!msg)
-		return -1;
+    if (!msg){return -1;}
 
     cmd = NL80211_CMD_SET_INTERFACE;
 
@@ -136,5 +136,5 @@ int main(int argc, char** argv)
 		
 	}
 
-
+}
 
