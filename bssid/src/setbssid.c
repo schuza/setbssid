@@ -47,7 +47,7 @@ static int nlCallback(struct nl_msg* msg, void* arg)
     uint8_t *addr;
 
 	switch(gnlh->cmd) {
-	case NL80211_CMD_SET_BSSID:
+	case NL80211_CMD_SET_INTERFACE:
 		if (get_addr(tb, &addr) < 0)
 			printf("New station: no MAC\n");
 		else
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     if (!msg)
 		return -1;
 
-    cmd = NL80211_CMD_SET_BSSID;
+    cmd = NL80211_CMD_SET_INTERFACE;
 
      printf("please input the mac :\n");  
     scanf("%s",mac_addr); 
@@ -129,11 +129,11 @@ int main(int argc, char** argv)
     //block for message to return
     ret = nl_recvmsgs_default(sk);
 	msg = NULL;
-	if (ret)
-	{
+	if (ret){
     	nla_put_failure:
 	nlmsg_free(msg);
-	printf(0, "nl80211: Failed to execute CMD %d on " "%s: error =%d:%s", cmd, ifname, ret, strerror(-ret));
+	//printf(0, "nl80211: Failed to execute CMD %d on " "%s: error =%d:%s", cmd, ifname, ret, strerror(-ret));
+		
 	}
 
 
